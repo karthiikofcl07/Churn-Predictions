@@ -269,7 +269,6 @@ The project includes a fully functional **ChurnSight** web application featuring
 <td align="center">
 <b>Karthikeyan Thirunavukkarasu</b><br/>
 Data Analytics Intern<br/>
-Cognifyz Technologies<br/>
 <br/>
 <a href="https://linkedin.com/in/karthikeyan-thirunavukkarasu-2a2949305">
 <img src="https://img.shields.io/badge/LinkedIn-Connect-0077B5?style=for-the-badge&logo=linkedin"/>
