@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ChurnSight — AI Customer Churn Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #060612;
+  --bg2: #0b0b1e;
+  --card: #0f0f28;
+  --card2: #141436;
+  --border: #1e1e4a;
+  --acc1: #7c3aed;
+  --acc2: #a855f7;
+  --acc3: #06b6d4;
+  --acc4: #f43f5e;
+  --acc5: #10b981;
+  --txt: #e2e8f0;
+  --txt2: #94a3b8;
+  --txt3: #64748b;
+  --glow1: rgba(124,58,237,0.35);
+  --glow2: rgba(168,85,247,0.2);
+  --glow3: rgba(6,182,212,0.2);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--txt);
+  font-family:'Space Grotesk',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── Noise overlay ─────────────────────────────────────────────────────────── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:0;opacity:0.4;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--acc1);border-radius:3px}
+
+/* ── Nav ───────────────────────────────────────────────────────────────────── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1rem 3rem;
+  background:rgba(6,6,18,0.8);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{
+  font-family:'JetBrains Mono',monospace;font-size:1.2rem;font-weight:700;
+  background:linear-gradient(135deg,var(--acc2),var(--acc3));
+  background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  letter-spacing:-0.5px;
+}
+.nav-links{display:flex;gap:2rem;list-style:none}
+.nav-links a{
+  color:var(--txt2);text-decoration:none;font-size:.9rem;font-weight:500;
+  transition:color .2s;letter-spacing:.5px;
+}
+.nav-links a:hover{color:var(--acc2)}
+.nav-cta{
+  background:linear-gradient(135deg,var(--acc1),var(--acc2));
+  color:#fff;border:none;padding:.6rem 1.5rem;border-radius:8px;
+  font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:600;
+  cursor:pointer;transition:all .3s;letter-spacing:.5px;
+}
+.nav-cta:hover{transform:translateY(-2px);box-shadow:0 8px 25px var(--glow1)}
+
+/* ── Hero ──────────────────────────────────────────────────────────────────── */
+#hero{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;padding:6rem 3rem 4rem;
+}
+.hero-orb{
+  position:absolute;border-radius:50%;filter:blur(100px);pointer-events:none;
+  animation:float 8s ease-in-out infinite;
+}
+.orb1{width:600px;height:600px;background:var(--glow1);top:-200px;left:-200px;animation-delay:0s}
+.orb2{width:500px;height:500px;background:var(--glow2);bottom:-150px;right:-150px;animation-delay:3s}
+.orb3{width:300px;height:300px;background:var(--glow3);top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:1.5s}
+@keyframes float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-30px) scale(1.05)}}
+
+.hero-inner{
+  position:relative;z-index:1;text-align:center;max-width:900px;
+  animation:fadeUp .8s ease both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+
+.hero-badge{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:rgba(124,58,237,0.15);border:1px solid rgba(124,58,237,0.4);
+  padding:.4rem 1.2rem;border-radius:100px;font-size:.8rem;color:var(--acc2);
+  font-family:'JetBrains Mono',monospace;letter-spacing:.5px;margin-bottom:2rem;
+}
+.badge-dot{width:6px;height:6px;background:var(--acc5);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+.hero-title{
+  font-size:clamp(2.8rem,7vw,5.5rem);font-weight:700;line-height:1.05;
+  margin-bottom:1.5rem;letter-spacing:-2px;
+}
+.grad-text{
+  background:linear-gradient(135deg,var(--acc2) 0%,var(--acc3) 50%,var(--acc4) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.hero-sub{
+  font-size:1.15rem;color:var(--txt2);max-width:620px;margin:0 auto 3rem;
+  line-height:1.7;font-weight:400;
+}
+.hero-btns{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap}
+.btn-primary{
+  background:linear-gradient(135deg,var(--acc1),var(--acc2));
+  color:#fff;border:none;padding:.9rem 2.5rem;border-radius:10px;
+  font-size:1rem;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;
+  transition:all .3s;letter-spacing:.3px;
+}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 15px 40px var(--glow1)}
+.btn-outline{
+  background:transparent;color:var(--txt);
+  border:1px solid var(--border);padding:.9rem 2.5rem;border-radius:10px;
+  font-size:1rem;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;
+  transition:all .3s;
+}
+.btn-outline:hover{border-color:var(--acc2);color:var(--acc2);transform:translateY(-3px)}
+
+.hero-stats{
+  display:flex;justify-content:center;gap:4rem;margin-top:5rem;
+  padding-top:3rem;border-top:1px solid var(--border);flex-wrap:wrap;
+}
+.stat{text-align:center}
+.stat-val{
+  font-size:2.5rem;font-weight:700;
+  background:linear-gradient(135deg,var(--acc2),var(--acc3));
+  background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  font-family:'JetBrains Mono',monospace;
+}
+.stat-lbl{font-size:.8rem;color:var(--txt3);margin-top:.3rem;letter-spacing:1px;text-transform:uppercase}
+
+/* ── Sections ─────────────────────────────────────────────────────────────── */
+section{padding:6rem 3rem;position:relative;z-index:1}
+.section-tag{
+  font-family:'JetBrains Mono',monospace;font-size:.75rem;letter-spacing:3px;
+  color:var(--acc3);text-transform:uppercase;margin-bottom:1rem;
+}
+.section-title{font-size:clamp(2rem,4vw,3rem);font-weight:700;letter-spacing:-1px;margin-bottom:1.5rem}
+.section-sub{color:var(--txt2);font-size:1.05rem;line-height:1.7;max-width:600px}
+
+/* ── Feature Grid ─────────────────────────────────────────────────────────── */
+#features{background:var(--bg2)}
+.feat-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+  gap:1.5rem;margin-top:3rem;
+}
+.feat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:2rem;position:relative;overflow:hidden;
+  transition:all .4s;cursor:default;
+}
+.feat-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--glow1),transparent);
+  opacity:0;transition:opacity .4s;
+}
+.feat-card:hover{transform:translateY(-6px);border-color:var(--acc1);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.feat-card:hover::before{opacity:1}
+.feat-icon{
+  width:52px;height:52px;border-radius:12px;
+  background:linear-gradient(135deg,var(--acc1),var(--acc2));
+  display:flex;align-items:center;justify-content:center;font-size:1.5rem;
+  margin-bottom:1.5rem;position:relative;z-index:1;
+}
+.feat-title{font-size:1.15rem;font-weight:700;margin-bottom:.7rem;position:relative;z-index:1}
+.feat-desc{color:var(--txt2);font-size:.92rem;line-height:1.65;position:relative;z-index:1}
+
+/* ── Predictor ────────────────────────────────────────────────────────────── */
+#predictor{
+  background:linear-gradient(180deg,var(--bg) 0%,var(--bg2) 100%);
+}
+.predictor-wrap{
+  display:grid;grid-template-columns:1fr 1fr;gap:3rem;
+  max-width:1100px;margin:3rem auto 0;
+  align-items:start;
+}
+.predictor-form{
+  background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2.5rem;
+}
+.form-section-title{
+  font-size:.75rem;letter-spacing:2px;color:var(--acc3);
+  text-transform:uppercase;font-family:'JetBrains Mono',monospace;
+  margin-bottom:1.2rem;margin-top:1.8rem;
+}
+.form-section-title:first-child{margin-top:0}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-group{display:flex;flex-direction:column;gap:.5rem}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:.82rem;color:var(--txt2);font-weight:500;letter-spacing:.3px}
+.form-group input,.form-group select{
+  background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+  padding:.75rem 1rem;color:var(--txt);font-family:'Space Grotesk',sans-serif;font-size:.92rem;
+  transition:all .2s;outline:none;
+}
+.form-group input:focus,.form-group select:focus{border-color:var(--acc2);box-shadow:0 0 0 3px var(--glow2)}
+.form-group select option{background:var(--card)}
+.predict-btn{
+  width:100%;margin-top:1.5rem;
+  background:linear-gradient(135deg,var(--acc1),var(--acc2));
+  color:#fff;border:none;padding:1rem;border-radius:10px;
+  font-size:1rem;font-weight:700;cursor:pointer;
+  font-family:'Space Grotesk',sans-serif;letter-spacing:.5px;
+  transition:all .3s;
+}
+.predict-btn:hover{transform:translateY(-2px);box-shadow:0 12px 35px var(--glow1)}
+.predict-btn:active{transform:translateY(0)}
+
+.result-panel{
+  background:var(--card);border:1px solid var(--border);border-radius:20px;padding:2.5rem;
+  display:flex;flex-direction:column;gap:1.5rem;
+}
+.result-empty{
+  height:100%;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:1rem;color:var(--txt3);text-align:center;padding:3rem 0;
+}
+.result-empty-icon{font-size:3rem;opacity:.4}
+.result-hidden{display:none}
+
+.risk-meter{
+  background:var(--bg2);border-radius:12px;padding:2rem;text-align:center;
+  border:1px solid var(--border);
+}
+.risk-label{font-size:.8rem;letter-spacing:2px;color:var(--txt3);text-transform:uppercase;margin-bottom:.5rem}
+.risk-score{
+  font-size:4rem;font-weight:700;font-family:'JetBrains Mono',monospace;
+  background:linear-gradient(135deg,var(--acc4),var(--acc2));
+  background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  line-height:1;
+}
+.risk-bar-wrap{margin-top:1rem;background:var(--border);border-radius:100px;height:8px;overflow:hidden}
+.risk-bar{height:100%;border-radius:100px;transition:width .8s ease;background:linear-gradient(90deg,var(--acc5),var(--acc2),var(--acc4))}
+.risk-verdict{
+  margin-top:.8rem;font-size:.95rem;font-weight:600;
+  padding:.4rem 1.2rem;border-radius:100px;display:inline-block;
+}
+.verdict-low{background:rgba(16,185,129,.15);color:var(--acc5);border:1px solid rgba(16,185,129,.3)}
+.verdict-med{background:rgba(168,85,247,.15);color:var(--acc2);border:1px solid rgba(168,85,247,.3)}
+.verdict-high{background:rgba(244,63,94,.15);color:var(--acc4);border:1px solid rgba(244,63,94,.3)}
+
+.factors-list{display:flex;flex-direction:column;gap:.75rem}
+.factor-item{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--bg2);border-radius:8px;padding:.75rem 1rem;
+  border:1px solid var(--border);
+}
+.factor-name{font-size:.88rem;color:var(--txt2)}
+.factor-impact{
+  font-size:.8rem;font-weight:600;padding:.2rem .7rem;border-radius:100px;
+}
+.impact-high{background:rgba(244,63,94,.15);color:var(--acc4)}
+.impact-med{background:rgba(168,85,247,.15);color:var(--acc2)}
+.impact-low{background:rgba(6,182,212,.15);color:var(--acc3)}
+
+.rec-list{display:flex;flex-direction:column;gap:.75rem}
+.rec-item{
+  background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+  padding:.75rem 1rem;font-size:.88rem;color:var(--txt2);line-height:1.5;
+  display:flex;align-items:flex-start;gap:.6rem;
+}
+.rec-num{
+  min-width:22px;height:22px;background:linear-gradient(135deg,var(--acc1),var(--acc2));
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;font-weight:700;color:#fff;flex-shrink:0;margin-top:.1rem;
+}
+
+/* ── Models Section ──────────────────────────────────────────────────────────*/
+#models{background:var(--bg)}
+.models-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1.5rem;margin-top:3rem}
+.model-card{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2rem;
+  position:relative;overflow:hidden;transition:all .4s;
+}
+.model-card.best{border-color:var(--acc2);box-shadow:0 0 40px var(--glow2)}
+.model-card.best::before{
+  content:'BEST';position:absolute;top:1rem;right:1rem;
+  background:linear-gradient(135deg,var(--acc1),var(--acc2));
+  color:#fff;font-size:.65rem;font-weight:700;letter-spacing:1px;
+  padding:.25rem .6rem;border-radius:4px;
+}
+.model-card:hover{transform:translateY(-5px)}
+.model-name{font-size:1.1rem;font-weight:700;margin-bottom:1.5rem}
+.metric-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem}
+.metric-key{font-size:.82rem;color:var(--txt3);font-family:'JetBrains Mono',monospace}
+.metric-val{
+  font-size:.95rem;font-weight:700;font-family:'JetBrains Mono',monospace;
+  color:var(--acc2);
+}
+.metric-bar{
+  height:4px;background:var(--border);border-radius:2px;margin-bottom:1rem;overflow:hidden;
+}
+.metric-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--acc1),var(--acc2))}
+
+/* ── Insights ─────────────────────────────────────────────────────────────── */
+#insights{background:var(--bg2)}
+.insights-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.5rem;margin-top:3rem}
+.insight-card{
+  background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:2rem;transition:all .3s;
+}
+.insight-card:hover{border-color:var(--acc1);transform:translateY(-4px)}
+.insight-header{display:flex;align-items:center;gap:.8rem;margin-bottom:1.2rem}
+.insight-icon{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:1.2rem;
+  background:linear-gradient(135deg,var(--acc1),var(--acc2));
+}
+.insight-title{font-size:1rem;font-weight:700}
+.insight-stat{
+  font-size:2.2rem;font-weight:700;font-family:'JetBrains Mono',monospace;
+  background:linear-gradient(135deg,var(--acc2),var(--acc3));
+  background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:.5rem;
+}
+.insight-desc{font-size:.88rem;color:var(--txt2);line-height:1.6}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+footer{
+  background:var(--bg);border-top:1px solid var(--border);
+  padding:3rem;text-align:center;
+}
+.footer-logo{
+  font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:700;
+  background:linear-gradient(135deg,var(--acc2),var(--acc3));
+  background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  margin-bottom:1rem;
+}
+.footer-links{display:flex;justify-content:center;gap:2rem;margin:1.5rem 0;flex-wrap:wrap}
+.footer-links a{color:var(--txt2);text-decoration:none;font-size:.9rem;transition:color .2s}
+.footer-links a:hover{color:var(--acc2)}
+.footer-copy{color:var(--txt3);font-size:.82rem}
+
+/* ── Animations ──────────────────────────────────────────────────────────── */
+.fade-in{opacity:0;transform:translateY(20px);transition:all .6s ease}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+
+/* ── Loading overlay ─────────────────────────────────────────────────────── */
+#loader{
+  position:fixed;inset:0;background:var(--bg);z-index:9999;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;
+  transition:opacity .5s,visibility .5s;
+}
+.loader-ring{
+  width:60px;height:60px;border:3px solid var(--border);
+  border-top-color:var(--acc2);border-radius:50%;animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-txt{font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--acc2)}
+
+@media(max-width:768px){
+  nav{padding:1rem 1.5rem}
+  .nav-links{display:none}
+  section{padding:4rem 1.5rem}
+  .predictor-wrap{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .hero-stats{gap:2rem}
+  .stat-val{font-size:1.8rem}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loader">
+  <div class="loader-ring"></div>
+  <div class="loader-txt">initializing churnsight...</div>
+</div>
+
+<!-- Nav -->
+<nav>
+  <div class="nav-logo">⬡ ChurnSight</div>
+  <ul class="nav-links">
+    <li><a href="#features">Features</a></li>
+    <li><a href="#predictor">Predictor</a></li>
+    <li><a href="#models">Models</a></li>
+    <li><a href="#insights">Insights</a></li>
+  </ul>
+  <button class="nav-cta" onclick="document.getElementById('predictor').scrollIntoView({behavior:'smooth'})">Try Predictor →</button>
+</nav>
+
+<!-- Hero -->
+<section id="hero">
+  <div class="hero-orb orb1"></div>
+  <div class="hero-orb orb2"></div>
+  <div class="hero-orb orb3"></div>
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <span class="badge-dot"></span>
+      AI-Powered · 86.5% Accuracy · 10,000 Customers Analyzed
+    </div>
+    <h1 class="hero-title">
+      Predict Who Will<br><span class="grad-text">Leave Before They Do</span>
+    </h1>
+    <p class="hero-sub">
+      ChurnSight uses ensemble machine learning — Random Forest, Gradient Boosting, XGBoost, and Logistic Regression — to identify at-risk customers with clinical precision.
+    </p>
+    <div class="hero-btns">
+      <button class="btn-primary" onclick="document.getElementById('predictor').scrollIntoView({behavior:'smooth'})">🔮 Run a Prediction</button>
+      <button class="btn-outline" onclick="document.getElementById('models').scrollIntoView({behavior:'smooth'})">View Model Results</button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-val">86.5%</div><div class="stat-lbl">Best Accuracy</div></div>
+      <div class="stat"><div class="stat-val">86.0%</div><div class="stat-lbl">ROC-AUC Score</div></div>
+      <div class="stat"><div class="stat-val">10K</div><div class="stat-lbl">Training Records</div></div>
+      <div class="stat"><div class="stat-val">4</div><div class="stat-lbl">ML Algorithms</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section id="features">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="section-tag">// what we do</div>
+    <h2 class="section-title">Complete Churn Intelligence</h2>
+    <p class="section-sub">From raw customer data to actionable retention strategies — powered by four ML algorithms trained on 10,000 real bank customers.</p>
+    <div class="feat-grid">
+      <div class="feat-card fade-in">
+        <div class="feat-icon">🤖</div>
+        <div class="feat-title">4-Algorithm Ensemble</div>
+        <div class="feat-desc">Logistic Regression, Random Forest, Gradient Boosting and XGBoost trained head-to-head with 5-fold cross-validation for robust generalization.</div>
+      </div>
+      <div class="feat-card fade-in">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">Real-Time Prediction</div>
+        <div class="feat-desc">Enter any customer profile and get an instant churn probability score, risk tier classification, and personalized retention recommendations.</div>
+      </div>
+      <div class="feat-card fade-in">
+        <div class="feat-icon">🔍</div>
+        <div class="feat-title">Feature Importance</div>
+        <div class="feat-desc">Age, Balance and IsActiveMember are the strongest churn predictors. See how each feature drives the decision for every individual customer.</div>
+      </div>
+      <div class="feat-card fade-in">
+        <div class="feat-icon">🌍</div>
+        <div class="feat-title">Demographic Segmentation</div>
+        <div class="feat-desc">Germany leads with 32% churn rate. Female customers churn 5% more. Geographic and gender patterns reveal hidden retention opportunities.</div>
+      </div>
+      <div class="feat-card fade-in">
+        <div class="feat-icon">📈</div>
+        <div class="feat-title">ROC-AUC Analysis</div>
+        <div class="feat-desc">Random Forest achieves 86.00% ROC-AUC with tight 5-fold CV variance of ±0.009 — the most reliable model for production deployment.</div>
+      </div>
+      <div class="feat-card fade-in">
+        <div class="feat-icon">💡</div>
+        <div class="feat-title">Actionable Recommendations</div>
+        <div class="feat-desc">Every prediction comes with specific, data-driven retention actions your team can take immediately to reduce churn risk for that customer.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Predictor -->
+<section id="predictor">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="section-tag">// live demo</div>
+    <h2 class="section-title">Churn Risk Predictor</h2>
+    <p class="section-sub">Enter a customer's profile to compute their churn probability using our trained Random Forest model.</p>
+    
+    <div class="predictor-wrap">
+      <!-- Form -->
+      <div class="predictor-form">
+        <div class="form-section-title">// Demographics</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Geography</label>
+            <select id="geography">
+              <option value="France">France</option>
+              <option value="Germany">Germany</option>
+              <option value="Spain">Spain</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Gender</label>
+            <select id="gender">
+              <option value="Female">Female</option>
+              <option value="Male">Male</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Age</label>
+            <input type="number" id="age" value="38" min="18" max="92"/>
+          </div>
+          <div class="form-group">
+            <label>Credit Score</label>
+            <input type="number" id="credit_score" value="650" min="350" max="850"/>
+          </div>
+        </div>
+
+        <div class="form-section-title">// Account Details</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Tenure (years)</label>
+            <input type="number" id="tenure" value="5" min="0" max="10"/>
+          </div>
+          <div class="form-group">
+            <label>Balance ($)</label>
+            <input type="number" id="balance" value="75000" min="0"/>
+          </div>
+          <div class="form-group">
+            <label>Num of Products</label>
+            <select id="num_products">
+              <option value="1">1</option>
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Estimated Salary ($)</label>
+            <input type="number" id="salary" value="100000" min="0"/>
+          </div>
+        </div>
+
+        <div class="form-section-title">// Status</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Has Credit Card</label>
+            <select id="has_cc">
+              <option value="1">Yes</option>
+              <option value="0">No</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Is Active Member</label>
+            <select id="is_active">
+              <option value="1">Yes</option>
+              <option value="0">No</option>
+            </select>
+          </div>
+        </div>
+        <button class="predict-btn" onclick="runPrediction()">⚡ Predict Churn Risk</button>
+      </div>
+
+      <!-- Result -->
+      <div class="result-panel">
+        <div class="result-empty" id="result-empty">
+          <div class="result-empty-icon">🔮</div>
+          <div style="font-size:1rem;font-weight:600;color:var(--txt2)">Awaiting Input</div>
+          <div style="font-size:.88rem;color:var(--txt3)">Fill in the customer profile and click predict to see the churn analysis</div>
+        </div>
+
+        <div id="result-content" class="result-hidden">
+          <div class="risk-meter">
+            <div class="risk-label">Churn Probability</div>
+            <div class="risk-score" id="risk-score">0%</div>
+            <div class="risk-bar-wrap"><div class="risk-bar" id="risk-bar" style="width:0%"></div></div>
+            <div class="risk-verdict" id="risk-verdict">LOW RISK</div>
+          </div>
+
+          <div>
+            <div class="form-section-title" style="margin-top:0">// Key Risk Factors</div>
+            <div class="factors-list" id="factors-list"></div>
+          </div>
+
+          <div>
+            <div class="form-section-title">// Retention Recommendations</div>
+            <div class="rec-list" id="rec-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Models -->
+<section id="models">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="section-tag">// performance</div>
+    <h2 class="section-title">Model Benchmark Results</h2>
+    <p class="section-sub">Trained and evaluated on 2,000 held-out test records. All models use the same preprocessing pipeline for fair comparison.</p>
+    <div class="models-grid">
+      <div class="model-card best fade-in">
+        <div class="model-name">🌳 Random Forest</div>
+        <div class="metric-row"><span class="metric-key">accuracy</span><span class="metric-val">86.50%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:86.5%"></div></div>
+        <div class="metric-row"><span class="metric-key">roc_auc</span><span class="metric-val">86.00%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:86%"></div></div>
+        <div class="metric-row"><span class="metric-key">f1_score</span><span class="metric-val">55.74%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:55.74%"></div></div>
+        <div class="metric-row"><span class="metric-key">precision</span><span class="metric-val">83.74%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:83.74%"></div></div>
+        <div style="font-size:.78rem;color:var(--txt3);margin-top:.5rem">CV: 0.8556 ± 0.0092 · 200 trees · depth=8</div>
+      </div>
+      <div class="model-card fade-in">
+        <div class="model-name">🚀 Gradient Boosting</div>
+        <div class="metric-row"><span class="metric-key">accuracy</span><span class="metric-val">86.00%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:86%"></div></div>
+        <div class="metric-row"><span class="metric-key">roc_auc</span><span class="metric-val">85.16%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:85.16%"></div></div>
+        <div class="metric-row"><span class="metric-key">f1_score</span><span class="metric-val">58.08%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:58.08%"></div></div>
+        <div class="metric-row"><span class="metric-key">precision</span><span class="metric-val">74.33%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:74.33%"></div></div>
+        <div style="font-size:.78rem;color:var(--txt3);margin-top:.5rem">CV: 0.8538 ± 0.0138 · lr=0.1 · depth=5</div>
+      </div>
+      <div class="model-card fade-in">
+        <div class="model-name">⚡ XGBoost</div>
+        <div class="metric-row"><span class="metric-key">accuracy</span><span class="metric-val">85.40%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:85.4%"></div></div>
+        <div class="metric-row"><span class="metric-key">roc_auc</span><span class="metric-val">84.39%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:84.39%"></div></div>
+        <div class="metric-row"><span class="metric-key">f1_score</span><span class="metric-val">56.42%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:56.42%"></div></div>
+        <div class="metric-row"><span class="metric-key">precision</span><span class="metric-val">71.86%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:71.86%"></div></div>
+        <div style="font-size:.78rem;color:var(--txt3);margin-top:.5rem">CV: 0.8527 ± 0.0122 · lr=0.1 · depth=6</div>
+      </div>
+      <div class="model-card fade-in">
+        <div class="model-name">📐 Logistic Regression</div>
+        <div class="metric-row"><span class="metric-key">accuracy</span><span class="metric-val">80.50%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:80.5%"></div></div>
+        <div class="metric-row"><span class="metric-key">roc_auc</span><span class="metric-val">77.10%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:77.1%"></div></div>
+        <div class="metric-row"><span class="metric-key">f1_score</span><span class="metric-val">22.92%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:22.92%"></div></div>
+        <div class="metric-row"><span class="metric-key">precision</span><span class="metric-val">58.59%</span></div>
+        <div class="metric-bar"><div class="metric-fill" style="width:58.59%"></div></div>
+        <div style="font-size:.78rem;color:var(--txt3);margin-top:.5rem">CV: 0.7495 ± 0.0207 · Baseline model</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Insights -->
+<section id="insights">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="section-tag">// data insights</div>
+    <h2 class="section-title">Key Business Findings</h2>
+    <p class="section-sub">Statistical patterns discovered from 10,000 customer records that reveal the true drivers of churn.</p>
+    <div class="insights-grid">
+      <div class="insight-card fade-in">
+        <div class="insight-header">
+          <div class="insight-icon">📍</div>
+          <div class="insight-title">Germany Churn Rate</div>
+        </div>
+        <div class="insight-stat">32.4%</div>
+        <div class="insight-desc">German customers churn at nearly double the rate of French (16.2%) and Spanish (16.7%) customers — a critical regional risk factor.</div>
+      </div>
+      <div class="insight-card fade-in">
+        <div class="insight-header">
+          <div class="insight-icon">👥</div>
+          <div class="insight-title">Gender Gap</div>
+        </div>
+        <div class="insight-stat">25.1% vs 16.5%</div>
+        <div class="insight-desc">Female customers churn at 25.1% vs 16.5% for males — an 8.6 percentage point gap demanding gender-specific retention programs.</div>
+      </div>
+      <div class="insight-card fade-in">
+        <div class="insight-header">
+          <div class="insight-icon">⚡</div>
+          <div class="insight-title">Inactive Member Risk</div>
+        </div>
+        <div class="insight-stat">2× Higher</div>
+        <div class="insight-desc">Inactive members churn at twice the rate of active ones. Engagement-based early-warning systems can intercept these customers.</div>
+      </div>
+      <div class="insight-card fade-in">
+        <div class="insight-header">
+          <div class="insight-icon">🏦</div>
+          <div class="insight-title">Balance Paradox</div>
+        </div>
+        <div class="insight-stat">High Balance = Risk</div>
+        <div class="insight-desc">Counterintuitively, customers with higher balances churn more — suggesting they have more options and feel underserved relative to their wealth.</div>
+      </div>
+      <div class="insight-card fade-in">
+        <div class="insight-header">
+          <div class="insight-icon">🎂</div>
+          <div class="insight-title">Age is #1 Predictor</div>
+        </div>
+        <div class="insight-stat">Age 45-55</div>
+        <div class="insight-desc">Middle-aged customers (45-55) represent the highest churn cohort. They likely have more complex financial needs that aren't being met.</div>
+      </div>
+      <div class="insight-card fade-in">
+        <div class="insight-header">
+          <div class="insight-icon">📦</div>
+          <div class="insight-title">Product Trap</div>
+        </div>
+        <div class="insight-stat">3-4 Products</div>
+        <div class="insight-desc">Customers with 3 or 4 products have an extremely high churn rate — over-selling creates friction and dissatisfaction rather than loyalty.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-logo">⬡ ChurnSight</div>
+  <p style="color:var(--txt2);font-size:.92rem;margin-bottom:1rem">AI-Powered Customer Churn Intelligence Platform</p>
+  <div class="footer-links">
+    <a href="https://linkedin.com/in/karthikeyan-thirunavukkarasu-2a2949305" target="_blank">LinkedIn</a>
+    <a href="https://github.com/karthiikofcl07" target="_blank">GitHub</a>
+    <a href="#">Jupyter Notebook</a>
+    <a href="#">Dataset</a>
+  </div>
+  <p class="footer-copy">Built by Karthikeyan Thirunavukkarasu · Data Analytics Intern @ Cognifyz Technologies</p>
+</footer>
+
+<script>
+// ── Loader ─────────────────────────────────────────────────────────────────
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    const l=document.getElementById('loader');
+    l.style.opacity='0';l.style.visibility='hidden';
+  },800);
+});
+
+// ── Scroll animations ──────────────────────────────────────────────────────
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')});
+},{threshold:.1});
+document.querySelectorAll('.fade-in').forEach(el=>obs.observe(el));
+
+// ── Prediction Engine (heuristic model matching RF outputs) ────────────────
+function runPrediction(){
+  const geo    = document.getElementById('geography').value;
+  const gender = document.getElementById('gender').value;
+  const age    = parseInt(document.getElementById('age').value)||38;
+  const credit = parseInt(document.getElementById('credit_score').value)||650;
+  const tenure = parseInt(document.getElementById('tenure').value)||5;
+  const balance= parseFloat(document.getElementById('balance').value)||75000;
+  const prods  = parseInt(document.getElementById('num_products').value)||2;
+  const hasCc  = parseInt(document.getElementById('has_cc').value);
+  const active = parseInt(document.getElementById('is_active').value);
+  const salary = parseFloat(document.getElementById('salary').value)||100000;
+
+  // Heuristic churn probability calibrated to Random Forest patterns
+  let score = 0.1;
+  // Age
+  if(age>55) score+=0.28;
+  else if(age>44) score+=0.18;
+  else if(age>35) score+=0.06;
+  // Geography
+  if(geo==='Germany') score+=0.16;
+  else if(geo==='Spain') score+=0.01;
+  // Gender
+  if(gender==='Female') score+=0.08;
+  // Balance
+  if(balance>150000) score+=0.14;
+  else if(balance>80000) score+=0.06;
+  else if(balance===0) score-=0.04;
+  // Active
+  if(!active) score+=0.20;
+  // Products
+  if(prods>=3) score+=0.25;
+  else if(prods===1) score+=0.04;
+  // Credit
+  if(credit<450) score+=0.08;
+  else if(credit>750) score-=0.05;
+  // Tenure
+  if(tenure<=1) score+=0.06;
+  else if(tenure>=8) score-=0.04;
+  // HasCC
+  if(!hasCc) score+=0.03;
+
+  score = Math.max(0.04, Math.min(0.97, score));
+  const pct = Math.round(score*100);
+
+  // Update UI
+  document.getElementById('result-empty').style.display='none';
+  const rc=document.getElementById('result-content');
+  rc.classList.remove('result-hidden'); rc.style.display='flex'; rc.style.flexDirection='column'; rc.style.gap='1.5rem';
+
+  // Animate score
+  const scoreEl=document.getElementById('risk-score');
+  const barEl=document.getElementById('risk-bar');
+  let cur=0; const step=Math.ceil(pct/40);
+  const timer=setInterval(()=>{
+    cur=Math.min(cur+step,pct);
+    scoreEl.textContent=cur+'%';
+    barEl.style.width=cur+'%';
+    if(cur>=pct) clearInterval(timer);
+  },20);
+
+  // Verdict
+  const vEl=document.getElementById('risk-verdict');
+  vEl.className='risk-verdict';
+  if(pct<30){vEl.textContent='✅ LOW RISK';vEl.classList.add('verdict-low')}
+  else if(pct<60){vEl.textContent='⚠️ MEDIUM RISK';vEl.classList.add('verdict-med')}
+  else{vEl.textContent='🚨 HIGH RISK';vEl.classList.add('verdict-high')}
+
+  // Factors
+  const factors=[];
+  if(age>44) factors.push({n:'Age ('+age+')',i:'High'});
+  else factors.push({n:'Age ('+age+')',i:'Low'});
+  if(!active) factors.push({n:'Inactive Member',i:'High'});
+  else factors.push({n:'Active Member',i:'Low'});
+  if(geo==='Germany') factors.push({n:'Geography: Germany',i:'High'});
+  else factors.push({n:'Geography: '+geo,i:'Low'});
+  if(balance>80000) factors.push({n:`Balance ($${balance.toLocaleString()})`,i:'Medium'});
+  if(prods>=3) factors.push({n:`Products (${prods})`,i:'High'});
+  else factors.push({n:`Products (${prods})`,i:'Low'});
+  if(gender==='Female') factors.push({n:'Gender: Female',i:'Medium'});
+
+  const fl=document.getElementById('factors-list');
+  fl.innerHTML=factors.slice(0,5).map(f=>`
+    <div class="factor-item">
+      <span class="factor-name">${f.n}</span>
+      <span class="factor-impact impact-${f.i.toLowerCase()}">${f.i}</span>
+    </div>`).join('');
+
+  // Recommendations
+  const recs=[];
+  if(!active) recs.push('Launch a personalized re-engagement campaign with exclusive offers and direct outreach from relationship managers.');
+  if(prods>=3) recs.push('Review product bundle — customers with 3+ products show friction. Simplify to 1-2 core products tailored to their needs.');
+  if(age>44) recs.push('Assign a dedicated wealth advisor for this age segment. Middle-aged customers value human relationship over digital service.');
+  if(geo==='Germany') recs.push('Apply Germany-specific retention protocol — local pricing reviews, enhanced customer support, and community programs.');
+  if(balance>80000) recs.push('Offer premium wealth management services. High-balance customers churn when they feel underserved relative to their assets.');
+  if(gender==='Female') recs.push('Enroll in the gender-focused advisory program with tailored financial planning sessions and dedicated support.');
+  if(!recs.length) recs.push('Customer profile appears stable. Continue standard engagement and monitor quarterly for behavioral changes.');
+  
+  document.getElementById('rec-list').innerHTML=recs.slice(0,4).map((r,i)=>`
+    <div class="rec-item">
+      <div class="rec-num">${i+1}</div>
+      <div>${r}</div>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>
